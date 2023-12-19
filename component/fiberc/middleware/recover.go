@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"net/http"
 
-	"github.com/go-playground/validator"
 	sctx "github.com/phathdt/service-context"
 
 	"github.com/gofiber/fiber/v2"
@@ -32,7 +32,6 @@ func Recover(serviceCtx sctx.ServiceContext) fiber.Handler {
 						})
 
 					} else {
-
 						ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
 							"code":    http.StatusInternalServerError,
 							"status":  "internal server error",
