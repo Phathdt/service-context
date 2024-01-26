@@ -3,7 +3,6 @@ package mongoc
 import (
 	"context"
 	"flag"
-	"fmt"
 
 	sctx "github.com/phathdt/service-context"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -41,11 +40,7 @@ func (m *mongoClient) Activate(sc sctx.ServiceContext) error {
 
 	clientOptions := options.Client().ApplyURI(m.mongoUri)
 
-	fmt.Println("mongo >>>>>>>>>>>>>>>>>>>>>>>>>")
-	fmt.Printf("mongo enable_tracing = %t", sctx.EnableTracing)
-	fmt.Println("mongo >>>>>>>>>>>>>>>>>>>>>>>>>")
 	if sctx.EnableTracing {
-		fmt.Println("im in mongo")
 		clientOptions.Monitor = mongotrace.NewMonitor()
 	}
 
