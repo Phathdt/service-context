@@ -58,12 +58,10 @@ func (r *redisEngine) Activate(sc sctx.ServiceContext) error {
 
 	client := redis.NewClient(opt)
 
-	if sctx.EnableTracing {
-		// Enable tracing instrumentation.
-		if err := redisotel.InstrumentTracing(client); err != nil {
-			r.logger.Error("otelredis Cannot setup tracing ", err.Error())
-			return err
-		}
+	// Enable tracing instrumentation.
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		r.logger.Error("otelredis Cannot setup tracing ", err.Error())
+		return err
 	}
 
 	// Ping to test Redis connection

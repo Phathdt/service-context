@@ -39,10 +39,7 @@ func (m *mongoClient) Activate(sc sctx.ServiceContext) error {
 	ctx := context.Background()
 
 	clientOptions := options.Client().ApplyURI(m.mongoUri)
-
-	if sctx.EnableTracing {
-		clientOptions.Monitor = mongotrace.NewMonitor()
-	}
+	clientOptions.Monitor = mongotrace.NewMonitor()
 
 	m.client, _ = mongo.Connect(ctx, clientOptions)
 

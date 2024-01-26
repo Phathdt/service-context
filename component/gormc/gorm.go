@@ -8,6 +8,7 @@ import (
 
 	sctx "github.com/phathdt/service-context"
 	"github.com/phathdt/service-context/component/gormc/dialets"
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -110,7 +111,10 @@ func (gdb *gormDB) Activate(_ sctx.ServiceContext) error {
 	gdb.logger.Info("Connecting to database...")
 
 	var err error
-	gdb.db, err = gdb.getDBConn(dbType)
+	db, err := gdb.getDBConn(dbType)
+	if err := db.Use(otelgorm.NewPlugin()); err != nil {
+		return err
+	}
 
 	if err != nil {
 		gdb.logger.Error("Cannot connect to database", err.Error())
