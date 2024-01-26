@@ -3,6 +3,7 @@ package redisc
 import (
 	"context"
 	"flag"
+	"fmt"
 
 	sctx "github.com/phathdt/service-context"
 
@@ -58,8 +59,12 @@ func (r *redisEngine) Activate(sc sctx.ServiceContext) error {
 
 	client := redis.NewClient(opt)
 
+	fmt.Println("redisotel >>>>>>>>>>>>>>>>>>>>>>>>>")
+	fmt.Printf("redisotel enable_tracing = %t", sctx.EnableTracing)
+	fmt.Println("redisotel >>>>>>>>>>>>>>>>>>>>>>>>>")
 	if sctx.EnableTracing {
 		// Enable tracing instrumentation.
+		fmt.Println("im in redisotel")
 		if err := redisotel.InstrumentTracing(client); err != nil {
 			r.logger.Error("otelredis Cannot setup tracing ", err.Error())
 			return err
