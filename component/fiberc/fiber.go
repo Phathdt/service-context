@@ -2,14 +2,10 @@ package fiberc
 
 import (
 	"flag"
-
-	sctx "github.com/phathdt/service-context"
-	"github.com/phathdt/service-context/component/fiberc/middleware"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	flogger "github.com/gofiber/fiber/v2/middleware/logger"
+	sctx "github.com/phathdt/service-context"
 )
 
 const (
@@ -18,7 +14,7 @@ const (
 
 type FiberComponent interface {
 	GetPort() int
-	GetApp() *fiber.App
+	SetApp(app *fiber.App)
 }
 
 type fiberEngine struct {
@@ -32,8 +28,8 @@ func (e *fiberEngine) GetPort() int {
 	return e.port
 }
 
-func (e *fiberEngine) GetApp() *fiber.App {
-	return e.app
+func (e *fiberEngine) SetApp(app *fiber.App) {
+	e.app = app
 }
 
 func (e *fiberEngine) ID() string {
@@ -48,19 +44,8 @@ func (e *fiberEngine) Activate(sv sctx.ServiceContext) error {
 	e.logger = sv.Logger(e.id)
 
 	e.logger.Info("init engine...")
-	app := fiber.New(fiber.Config{BodyLimit: 100 * 1024 * 1024})
 
-	app.Use(flogger.New(flogger.Config{
-		Format: `{"ip":${ip}, "timestamp":"${time}", "status":${status}, "latency":"${latency}", "method":"${method}", "path":"${path}"}` + "\n",
-	}))
-	app.Use(compress.New())
-	app.Use(cors.New())
-	app.Use(middleware.Recover(sv))
-
-	app.Get("/", ping())
-	e.app = app
-
-	return nil
+	return e.app.Listen(fmt.Sprintf(":%d", e.GetPort()))
 }
 
 func (e *fiberEngine) Stop() error {
@@ -69,12 +54,4 @@ func (e *fiberEngine) Stop() error {
 
 func New(id string) *fiberEngine {
 	return &fiberEngine{id: id}
-}
-
-func ping() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		return ctx.Status(200).JSON(&fiber.Map{
-			"msg": "pong",
-		})
-	}
 }
