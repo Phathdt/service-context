@@ -3,6 +3,7 @@ package natspub
 import (
 	"encoding/json"
 	"flag"
+
 	"github.com/nats-io/nats.go"
 	sctx "github.com/phathdt/service-context"
 )
@@ -67,7 +68,9 @@ func (n *natsComponent) Activate(context sctx.ServiceContext) error {
 }
 
 func (n *natsComponent) Stop() error {
-	return n.Stop()
+	n.nc.Close()
+
+	return nil
 }
 
 func New(id string) *natsComponent {
