@@ -3,6 +3,7 @@ package fiberc
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	sctx "github.com/phathdt/service-context"
@@ -45,7 +46,23 @@ func (e *fiberEngine) Activate(sv sctx.ServiceContext) error {
 
 	e.logger.Info("init engine...")
 
-	return e.app.Listen(fmt.Sprintf(":%d", e.GetPort()))
+	errChan := make(chan error, 1)
+
+	go func() {
+		if err := e.app.Listen(fmt.Sprintf(":%d", e.GetPort())); err != nil {
+			errChan <- err
+		}
+	}()
+
+	time.Sleep(1 * time.Second)
+
+	select {
+	case err := <-errChan:
+		return err
+	default:
+	}
+
+	return nil
 }
 
 func (e *fiberEngine) Stop() error {
