@@ -8,7 +8,6 @@ import (
 
 	sctx "github.com/phathdt/service-context"
 	"github.com/phathdt/service-context/component/gormc/dialets"
-	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -112,9 +111,6 @@ func (gdb *gormDB) Activate(_ sctx.ServiceContext) error {
 
 	var err error
 	db, err := gdb.getDBConn(dbType)
-	if err := db.Use(otelgorm.NewPlugin()); err != nil {
-		return err
-	}
 
 	gdb.db = db
 

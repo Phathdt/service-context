@@ -6,7 +6,6 @@ import (
 
 	sctx "github.com/phathdt/service-context"
 
-	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -57,12 +56,6 @@ func (r *redisEngine) Activate(sc sctx.ServiceContext) error {
 	opt.MinIdleConns = r.maxIde
 
 	client := redis.NewClient(opt)
-
-	// Enable tracing instrumentation.
-	if err := redisotel.InstrumentTracing(client); err != nil {
-		r.logger.Error("otelredis Cannot setup tracing ", err.Error())
-		return err
-	}
 
 	// Ping to test Redis connection
 	if err = client.Ping(context.Background()).Err(); err != nil {

@@ -7,8 +7,6 @@ import (
 	sctx "github.com/phathdt/service-context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	mongotrace "go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
 type MongoClient interface {
@@ -39,7 +37,6 @@ func (m *mongoClient) Activate(sc sctx.ServiceContext) error {
 	ctx := context.Background()
 
 	clientOptions := options.Client().ApplyURI(m.mongoUri)
-	clientOptions.Monitor = mongotrace.NewMonitor()
 
 	m.client, _ = mongo.Connect(ctx, clientOptions)
 
