@@ -92,7 +92,7 @@ func (s *serviceCtx) MustGet(id string) interface{} {
 }
 
 func (s *serviceCtx) Load() error {
-	s.logger.Infoln("Service context is loading...")
+	s.logger.Info("Service context is loading...")
 
 	for _, c := range s.components {
 		if err := c.Activate(s); err != nil {
@@ -108,14 +108,14 @@ func (s *serviceCtx) Logger(prefix string) Logger {
 }
 
 func (s *serviceCtx) Stop() error {
-	s.logger.Infoln("Stopping service context")
+	s.logger.Info("Stopping service context")
 	for i := range s.components {
 		if err := s.components[i].Stop(); err != nil {
 			return err
 		}
 	}
 
-	s.logger.Infoln("Service context stopped")
+	s.logger.Info("Service context stopped")
 
 	return nil
 }

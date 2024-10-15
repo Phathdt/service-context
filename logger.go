@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 	"log/slog"
 	"os"
 	"runtime"
@@ -255,12 +257,13 @@ func newAppLogger(config *Config) *appLogger {
 		config.DefaultLevel = "info"
 	}
 
-	opts := &slog.HandlerOptions{
-		Level: mustParseLevel(config.DefaultLevel).Level(),
-	}
-	handler := slog.NewTextHandler(os.Stdout, opts)
-	l := slog.New(handler)
-
+	w := os.Stderr
+	l := slog.New(
+		tint.NewHandler(w, &tint.Options{
+			Level:   mustParseLevel(config.DefaultLevel).Level(),
+			NoColor: !isatty.IsTerminal(w.Fd()),
+		}),
+	)
 	return &appLogger{
 		logger:   l,
 		cfg:      *config,
@@ -289,12 +292,15 @@ func (al *appLogger) InitFlags() {
 }
 
 func (al *appLogger) Activate(_ ServiceContext) error {
-	lv := mustParseLevel(al.logLevel)
-	opts := &slog.HandlerOptions{
-		Level: lv.Level(),
-	}
-	handler := slog.NewTextHandler(os.Stdout, opts)
-	al.logger = slog.New(handler)
+	w := os.Stderr
+
+	al.logger = slog.New(
+		tint.NewHandler(w, &tint.Options{
+			Level:   mustParseLevel(al.logLevel).Level(),
+			NoColor: !isatty.IsTerminal(w.Fd()),
+		}),
+	)
+
 	return nil
 }
 
