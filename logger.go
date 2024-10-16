@@ -24,6 +24,14 @@ type Logger interface {
 	Panic(...interface{})
 	Trace(...interface{})
 
+	Debugf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Warnf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Panicf(format string, args ...interface{})
+	Tracef(format string, args ...interface{})
+
 	With(key string, value interface{}) Logger
 	Withs(Fields) Logger
 	WithSrc() Logger
@@ -125,6 +133,31 @@ func (l *logger) Error(args ...interface{}) { l.log(LevelError, args...) }
 func (l *logger) Fatal(args ...interface{}) { l.log(LevelFatal, args...); os.Exit(1) }
 func (l *logger) Panic(args ...interface{}) { s := fmt.Sprint(args...); l.log(LevelPanic, s); panic(s) }
 func (l *logger) Trace(args ...interface{}) { l.log(LevelTrace, args...) }
+
+func (l *logger) logf(level CustomLevel, format string, args ...interface{}) {
+	if !l.Logger.Enabled(context.Background(), level.Level()) {
+		return
+	}
+	msg := fmt.Sprintf(format, args...)
+	l.Logger.Log(context.Background(), level.Level(), msg)
+}
+
+func (l *logger) Debugf(format string, args ...interface{}) {
+	l.debugSrc().logf(LevelDebug, format, args...)
+}
+func (l *logger) Infof(format string, args ...interface{})  { l.logf(LevelInfo, format, args...) }
+func (l *logger) Warnf(format string, args ...interface{})  { l.logf(LevelWarn, format, args...) }
+func (l *logger) Errorf(format string, args ...interface{}) { l.logf(LevelError, format, args...) }
+func (l *logger) Fatalf(format string, args ...interface{}) {
+	l.logf(LevelFatal, format, args...)
+	os.Exit(1)
+}
+func (l *logger) Panicf(format string, args ...interface{}) {
+	s := fmt.Sprintf(format, args...)
+	l.logf(LevelPanic, s)
+	panic(s)
+}
+func (l *logger) Tracef(format string, args ...interface{}) { l.logf(LevelTrace, format, args...) }
 
 func (l *logger) With(key string, value interface{}) Logger {
 	return &logger{l.Logger.With(key, value), l.level}
