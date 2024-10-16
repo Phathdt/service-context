@@ -198,15 +198,8 @@ func newAppLogger(config *Config) *appLogger {
 		config.DefaultLevel = "info"
 	}
 
-	w := os.Stderr
-	l := slog.New(
-		tint.NewHandler(w, &tint.Options{
-			AddSource:  true,
-			Level:      mustParseLevel(config.DefaultLevel).Level(),
-			NoColor:    !isatty.IsTerminal(w.Fd()),
-			TimeFormat: time.DateTime,
-		}),
-	)
+	l := createSlogLogger(mustParseLevel(config.DefaultLevel))
+
 	return &appLogger{
 		logger:   l,
 		cfg:      *config,
@@ -235,20 +228,61 @@ func (al *appLogger) InitFlags() {
 }
 
 func (al *appLogger) Activate(_ ServiceContext) error {
-	w := os.Stderr
-
-	al.logger = slog.New(
-		tint.NewHandler(w, &tint.Options{
-			AddSource:  true,
-			Level:      mustParseLevel(al.logLevel).Level(),
-			NoColor:    !isatty.IsTerminal(w.Fd()),
-			TimeFormat: time.DateTime,
-		}),
-	)
+	al.logger = createSlogLogger(mustParseLevel(al.logLevel))
 
 	return nil
 }
 
 func (al *appLogger) Stop() error {
 	return nil
+}
+
+const (
+	ansiReset          = "\033[0m"
+	ansiFaint          = "\033[2m"
+	ansiResetFaint     = "\033[22m"
+	ansiBrightRed      = "\033[91m"
+	ansiBrightGreen    = "\033[92m"
+	ansiBrightYellow   = "\033[93m"
+	ansiBrightBlue     = "\033[94m"
+	ansiBrightMagenta  = "\033[95m"
+	ansiBrightCyan     = "\033[96m"
+	ansiBrightRedFaint = "\033[91;2m"
+	ansiBackgroundRed  = "\033[41m"
+)
+
+func createSlogLogger(level CustomLevel) *slog.Logger {
+	w := os.Stderr
+	return slog.New(
+		tint.NewHandler(w, &tint.Options{
+			AddSource:  true,
+			Level:      level.Level(),
+			NoColor:    !isatty.IsTerminal(w.Fd()),
+			TimeFormat: time.DateTime,
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				if a.Key == slog.LevelKey {
+					lvl := a.Value.Any().(slog.Level)
+					switch {
+					case lvl == LevelTrace.Level():
+						a.Value = slog.StringValue(ansiFaint + "TRACE" + ansiReset)
+					case lvl == LevelDebug.Level():
+						a.Value = slog.StringValue(ansiBrightBlue + "DEBUG" + ansiReset)
+					case lvl == LevelInfo.Level():
+						a.Value = slog.StringValue(ansiBrightGreen + "INFO" + ansiReset)
+					case lvl == LevelWarn.Level():
+						a.Value = slog.StringValue(ansiBrightYellow + "WARN" + ansiReset)
+					case lvl == LevelError.Level():
+						a.Value = slog.StringValue(ansiBrightRed + "ERROR" + ansiReset)
+					case lvl == LevelFatal.Level():
+						a.Value = slog.StringValue(ansiBrightMagenta + "FATAL" + ansiReset)
+					case lvl == LevelPanic.Level():
+						a.Value = slog.StringValue(ansiBackgroundRed + ansiBrightCyan + "PANIC" + ansiReset)
+					default:
+						a.Value = slog.StringValue("UNKNOWN")
+					}
+				}
+				return a
+			},
+		}),
+	)
 }
