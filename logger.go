@@ -32,6 +32,14 @@ type Logger interface {
 	Panicf(format string, args ...interface{})
 	Tracef(format string, args ...interface{})
 
+	Debugln(...interface{})
+	Infoln(...interface{})
+	Warnln(...interface{})
+	Errorln(...interface{})
+	Fatalln(...interface{})
+	Panicln(...interface{})
+	Traceln(...interface{})
+
 	With(key string, value interface{}) Logger
 	Withs(Fields) Logger
 	WithSrc() Logger
@@ -158,6 +166,20 @@ func (l *logger) Panicf(format string, args ...interface{}) {
 	panic(s)
 }
 func (l *logger) Tracef(format string, args ...interface{}) { l.logf(LevelTrace, format, args...) }
+
+func (l *logger) Debugln(args ...interface{}) { l.Debug(args...) }
+func (l *logger) Infoln(args ...interface{})  { l.Info(args...) }
+func (l *logger) Warnln(args ...interface{})  { l.Warn(args...) }
+func (l *logger) Errorln(args ...interface{}) { l.Error(args...) }
+func (l *logger) Fatalln(args ...interface{}) {
+	l.Fatal(args...)
+	// Note: os.Exit(1) is called by l.Fatal, so it's not needed here
+}
+func (l *logger) Panicln(args ...interface{}) {
+	l.Panic(args...)
+	// Note: panic is called by l.Panic, so it's not needed here
+}
+func (l *logger) Traceln(args ...interface{}) { l.Trace(args...) }
 
 func (l *logger) With(key string, value interface{}) Logger {
 	return &logger{l.Logger.With(key, value), l.level}
