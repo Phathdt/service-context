@@ -11,8 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	sctx "github.com/phathdt/service-context"
 	"github.com/phathdt/service-context/component/fiberc"
-
-	flogger "github.com/gofiber/fiber/v2/middleware/logger"
+	slogfiber "github.com/samber/slog-fiber"
 )
 
 func main() {
@@ -49,10 +48,10 @@ func ping() fiber.Handler {
 }
 
 func NewRouter(sc sctx.ServiceContext) {
+	logger := sctx.GlobalLogger().GetLogger("fiber").GetSLogger()
+
 	app := fiber.New(fiber.Config{BodyLimit: 100 * 1024 * 1024})
-	app.Use(flogger.New(flogger.Config{
-		Format: `{"ip":${ip}, "timestamp":"${time}", "status":${status}, "latency":"${latency}", "method":"${method}", "path":"${path}"}` + "\n",
-	}))
+	app.Use(slogfiber.New(logger))
 	app.Use(compress.New())
 	app.Use(cors.New())
 

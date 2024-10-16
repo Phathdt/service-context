@@ -12,6 +12,7 @@ require (
 	github.com/nats-io/nats.go v1.37.0
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.6.1
+	github.com/samber/slog-fiber v1.16.4
 	go.mongodb.org/mongo-driver v1.14.0
 	go.opentelemetry.io/otel v1.29.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.29.0
