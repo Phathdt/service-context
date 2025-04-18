@@ -24,8 +24,8 @@ type Component interface {
 
 type ServiceContext interface {
 	Load() error
-	MustGet(id string) interface{}
-	Get(id string) (interface{}, bool)
+	MustGet(id string) any
+	Get(id string) (any, bool)
 	Logger(prefix string) Logger
 	EnvName() string
 	GetName() string
@@ -71,7 +71,7 @@ func (s *serviceCtx) initFlags() {
 	}
 }
 
-func (s *serviceCtx) Get(id string) (interface{}, bool) {
+func (s *serviceCtx) Get(id string) (any, bool) {
 	c, ok := s.store[id]
 
 	if !ok {
@@ -81,7 +81,7 @@ func (s *serviceCtx) Get(id string) (interface{}, bool) {
 	return c, true
 }
 
-func (s *serviceCtx) MustGet(id string) interface{} {
+func (s *serviceCtx) MustGet(id string) any {
 	c, ok := s.Get(id)
 
 	if !ok {

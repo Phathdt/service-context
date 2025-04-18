@@ -58,7 +58,7 @@ type DefaultError struct {
 	ErrorField string `json:"message"`
 
 	// Further error details
-	DetailsField map[string]interface{} `json:"details,omitempty"`
+	DetailsField map[string]any `json:"details,omitempty"`
 
 	err error
 }
@@ -144,7 +144,7 @@ func (e DefaultError) Debug() string {
 	return e.DebugField
 }
 
-func (e DefaultError) Details() map[string]interface{} {
+func (e DefaultError) Details() map[string]any {
 	return e.DetailsField
 }
 
@@ -157,7 +157,7 @@ func (e DefaultError) WithReason(reason string) *DefaultError {
 	return &e
 }
 
-func (e DefaultError) WithReasonf(reason string, args ...interface{}) *DefaultError {
+func (e DefaultError) WithReasonf(reason string, args ...any) *DefaultError {
 	return e.WithReason(fmt.Sprintf(reason, args...))
 }
 
@@ -166,11 +166,11 @@ func (e DefaultError) WithError(message string) *DefaultError {
 	return &e
 }
 
-func (e DefaultError) WithErrorf(message string, args ...interface{}) *DefaultError {
+func (e DefaultError) WithErrorf(message string, args ...any) *DefaultError {
 	return e.WithError(fmt.Sprintf(message, args...))
 }
 
-func (e DefaultError) WithDebugf(debug string, args ...interface{}) *DefaultError {
+func (e DefaultError) WithDebugf(debug string, args ...any) *DefaultError {
 	return e.WithDebug(fmt.Sprintf(debug, args...))
 }
 
@@ -179,17 +179,17 @@ func (e DefaultError) WithDebug(debug string) *DefaultError {
 	return &e
 }
 
-func (e DefaultError) WithDetail(key string, detail interface{}) *DefaultError {
+func (e DefaultError) WithDetail(key string, detail any) *DefaultError {
 	if e.DetailsField == nil {
-		e.DetailsField = map[string]interface{}{}
+		e.DetailsField = map[string]any{}
 	}
 	e.DetailsField[key] = detail
 	return &e
 }
 
-func (e DefaultError) WithDetailf(key string, message string, args ...interface{}) *DefaultError {
+func (e DefaultError) WithDetailf(key string, message string, args ...any) *DefaultError {
 	if e.DetailsField == nil {
-		e.DetailsField = map[string]interface{}{}
+		e.DetailsField = map[string]any{}
 	}
 	e.DetailsField[key] = fmt.Sprintf(message, args...)
 	return &e
@@ -220,7 +220,7 @@ func ToDefaultError(err error, requestID string) *DefaultError {
 	de := &DefaultError{
 		RIDField:     requestID,
 		CodeField:    http.StatusInternalServerError,
-		DetailsField: map[string]interface{}{},
+		DetailsField: map[string]any{},
 		ErrorField:   err.Error(),
 	}
 	de.Wrap(err)
@@ -287,7 +287,7 @@ type StatusCarrier interface {
 // DetailsCarrier can be implemented by an error to support error contexts.
 type DetailsCarrier interface {
 	// Details returns details on the error, if applicable.
-	Details() map[string]interface{}
+	Details() map[string]any
 }
 
 // IDCarrier can be implemented by an error to support error contexts.

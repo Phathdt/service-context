@@ -4,11 +4,11 @@ import "net/http"
 
 // Response helpers
 var (
-	SimpleSuccessResponse = func(data interface{}) Response {
+	SimpleSuccessResponse = func(data any) Response {
 		return newResponse(http.StatusOK, data, nil, nil)
 	}
 
-	ResponseWithPaging = func(data, param interface{}, other interface{}) Response {
+	ResponseWithPaging = func(data, param any, other any) Response {
 		if v, ok := other.(Paging); ok {
 			return newResponse(http.StatusOK, data, param, v)
 		}
@@ -17,13 +17,13 @@ var (
 )
 
 type Response struct {
-	Code   int         `json:"code"`
-	Data   interface{} `json:"data"`
-	Param  interface{} `json:"param,omitempty"`
-	Paging interface{} `json:"paging,omitempty"`
+	Code   int `json:"code"`
+	Data   any `json:"data"`
+	Param  any `json:"param,omitempty"`
+	Paging any `json:"paging,omitempty"`
 }
 
-func newResponse(code int, data, param, other interface{}) Response {
+func newResponse(code int, data, param, other any) Response {
 	return Response{
 		Code:   code,
 		Data:   data,

@@ -9,7 +9,7 @@ import (
 )
 
 type Component interface {
-	Publish(topic string, data interface{}) error
+	Publish(topic string, data any) error
 	PublishRaw(topic string, data []byte) error
 }
 
@@ -20,7 +20,7 @@ type natsComponent struct {
 	logger  sctx.Logger
 }
 
-func (n *natsComponent) Publish(topic string, data interface{}) error {
+func (n *natsComponent) Publish(topic string, data any) error {
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return err

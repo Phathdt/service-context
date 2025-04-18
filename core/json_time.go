@@ -36,7 +36,7 @@ func (t *JSONTime) Value() (driver.Value, error) {
 }
 
 // This method for scanning JSONTime from datetime data type in sql
-func (t *JSONTime) Scan(value interface{}) error {
+func (t *JSONTime) Scan(value any) error {
 	if value == nil {
 		return nil
 	}

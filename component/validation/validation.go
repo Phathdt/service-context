@@ -13,7 +13,7 @@ func isHourTime(fl validator.FieldLevel) bool {
 	return regex.MatchString(fl.Field().String())
 }
 
-func Validate(data interface{}) error {
+func Validate(data any) error {
 	v := validator.New()
 
 	if err := v.RegisterValidation("hourtime", isHourTime); err != nil {

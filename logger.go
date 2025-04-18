@@ -4,43 +4,44 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/lmittmann/tint"
-	"github.com/mattn/go-isatty"
 	"log/slog"
 	"os"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 )
 
 type Fields map[string]any
 
 type Logger interface {
-	Debug(...interface{})
-	Info(...interface{})
-	Warn(...interface{})
-	Error(...interface{})
-	Fatal(...interface{})
-	Panic(...interface{})
-	Trace(...interface{})
+	Debug(...any)
+	Info(...any)
+	Warn(...any)
+	Error(...any)
+	Fatal(...any)
+	Panic(...any)
+	Trace(...any)
 
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Panicf(format string, args ...interface{})
-	Tracef(format string, args ...interface{})
+	Debugf(format string, args ...any)
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
+	Panicf(format string, args ...any)
+	Tracef(format string, args ...any)
 
-	Debugln(...interface{})
-	Infoln(...interface{})
-	Warnln(...interface{})
-	Errorln(...interface{})
-	Fatalln(...interface{})
-	Panicln(...interface{})
-	Traceln(...interface{})
+	Debugln(...any)
+	Infoln(...any)
+	Warnln(...any)
+	Errorln(...any)
+	Fatalln(...any)
+	Panicln(...any)
+	Traceln(...any)
 
-	With(key string, value interface{}) Logger
+	With(key string, value any) Logger
 	Withs(Fields) Logger
 	WithSrc() Logger
 	GetLevel() string
@@ -123,7 +124,7 @@ func (l *logger) debugSrc() *logger {
 	return &logger{l.Logger.With("source", fmt.Sprintf("%s:%d", file, line)), l.level}
 }
 
-func (l *logger) log(level CustomLevel, args ...interface{}) {
+func (l *logger) log(level CustomLevel, args ...any) {
 	if !l.Logger.Enabled(context.Background(), level.Level()) {
 		return
 	}
@@ -134,15 +135,15 @@ func (l *logger) log(level CustomLevel, args ...interface{}) {
 func (l *logger) GetSLogger() *slog.Logger {
 	return l.Logger
 }
-func (l *logger) Debug(args ...interface{}) { l.debugSrc().log(LevelDebug, args...) }
-func (l *logger) Info(args ...interface{})  { l.log(LevelInfo, args...) }
-func (l *logger) Warn(args ...interface{})  { l.log(LevelWarn, args...) }
-func (l *logger) Error(args ...interface{}) { l.log(LevelError, args...) }
-func (l *logger) Fatal(args ...interface{}) { l.log(LevelFatal, args...); os.Exit(1) }
-func (l *logger) Panic(args ...interface{}) { s := fmt.Sprint(args...); l.log(LevelPanic, s); panic(s) }
-func (l *logger) Trace(args ...interface{}) { l.log(LevelTrace, args...) }
+func (l *logger) Debug(args ...any) { l.debugSrc().log(LevelDebug, args...) }
+func (l *logger) Info(args ...any)  { l.log(LevelInfo, args...) }
+func (l *logger) Warn(args ...any)  { l.log(LevelWarn, args...) }
+func (l *logger) Error(args ...any) { l.log(LevelError, args...) }
+func (l *logger) Fatal(args ...any) { l.log(LevelFatal, args...); os.Exit(1) }
+func (l *logger) Panic(args ...any) { s := fmt.Sprint(args...); l.log(LevelPanic, s); panic(s) }
+func (l *logger) Trace(args ...any) { l.log(LevelTrace, args...) }
 
-func (l *logger) logf(level CustomLevel, format string, args ...interface{}) {
+func (l *logger) logf(level CustomLevel, format string, args ...any) {
 	if !l.Logger.Enabled(context.Background(), level.Level()) {
 		return
 	}
@@ -150,38 +151,38 @@ func (l *logger) logf(level CustomLevel, format string, args ...interface{}) {
 	l.Logger.Log(context.Background(), level.Level(), msg)
 }
 
-func (l *logger) Debugf(format string, args ...interface{}) {
+func (l *logger) Debugf(format string, args ...any) {
 	l.debugSrc().logf(LevelDebug, format, args...)
 }
-func (l *logger) Infof(format string, args ...interface{})  { l.logf(LevelInfo, format, args...) }
-func (l *logger) Warnf(format string, args ...interface{})  { l.logf(LevelWarn, format, args...) }
-func (l *logger) Errorf(format string, args ...interface{}) { l.logf(LevelError, format, args...) }
-func (l *logger) Fatalf(format string, args ...interface{}) {
+func (l *logger) Infof(format string, args ...any)  { l.logf(LevelInfo, format, args...) }
+func (l *logger) Warnf(format string, args ...any)  { l.logf(LevelWarn, format, args...) }
+func (l *logger) Errorf(format string, args ...any) { l.logf(LevelError, format, args...) }
+func (l *logger) Fatalf(format string, args ...any) {
 	l.logf(LevelFatal, format, args...)
 	os.Exit(1)
 }
-func (l *logger) Panicf(format string, args ...interface{}) {
+func (l *logger) Panicf(format string, args ...any) {
 	s := fmt.Sprintf(format, args...)
 	l.logf(LevelPanic, s)
 	panic(s)
 }
-func (l *logger) Tracef(format string, args ...interface{}) { l.logf(LevelTrace, format, args...) }
+func (l *logger) Tracef(format string, args ...any) { l.logf(LevelTrace, format, args...) }
 
-func (l *logger) Debugln(args ...interface{}) { l.Debug(args...) }
-func (l *logger) Infoln(args ...interface{})  { l.Info(args...) }
-func (l *logger) Warnln(args ...interface{})  { l.Warn(args...) }
-func (l *logger) Errorln(args ...interface{}) { l.Error(args...) }
-func (l *logger) Fatalln(args ...interface{}) {
+func (l *logger) Debugln(args ...any) { l.Debug(args...) }
+func (l *logger) Infoln(args ...any)  { l.Info(args...) }
+func (l *logger) Warnln(args ...any)  { l.Warn(args...) }
+func (l *logger) Errorln(args ...any) { l.Error(args...) }
+func (l *logger) Fatalln(args ...any) {
 	l.Fatal(args...)
 	// Note: os.Exit(1) is called by l.Fatal, so it's not needed here
 }
-func (l *logger) Panicln(args ...interface{}) {
+func (l *logger) Panicln(args ...any) {
 	l.Panic(args...)
 	// Note: panic is called by l.Panic, so it's not needed here
 }
-func (l *logger) Traceln(args ...interface{}) { l.Trace(args...) }
+func (l *logger) Traceln(args ...any) { l.Trace(args...) }
 
-func (l *logger) With(key string, value interface{}) Logger {
+func (l *logger) With(key string, value any) Logger {
 	return &logger{l.Logger.With(key, value), l.level}
 }
 
