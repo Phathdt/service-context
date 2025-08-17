@@ -1,7 +1,6 @@
 package fiberc
 
 import (
-	"flag"
 	"fmt"
 	"time"
 
@@ -38,7 +37,7 @@ func (e *fiberEngine) ID() string {
 }
 
 func (e *fiberEngine) InitFlags() {
-	flag.IntVar(&e.port, "fiber-port", defaultPort, "fiber server port. Default 4000")
+	// Configuration is passed via constructor, no flags needed
 }
 
 func (e *fiberEngine) Activate(sv sctx.ServiceContext) error {
@@ -69,6 +68,6 @@ func (e *fiberEngine) Stop() error {
 	return e.app.Shutdown()
 }
 
-func New(id string) *fiberEngine {
-	return &fiberEngine{id: id}
+func New(id string, port int) *fiberEngine {
+	return &fiberEngine{id: id, port: port}
 }
