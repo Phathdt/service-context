@@ -2,7 +2,6 @@ package sctx
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -45,6 +44,7 @@ type Logger interface {
 	Withs(Fields) Logger
 	WithSrc() Logger
 	GetLevel() string
+	GetFormat() string
 
 	GetSLogger() *slog.Logger
 }
@@ -105,11 +105,16 @@ func (l CustomLevel) Level() slog.Level {
 
 type logger struct {
 	*slog.Logger
-	level CustomLevel
+	level  CustomLevel
+	format string
 }
 
 func (l *logger) GetLevel() string {
 	return l.level.String()
+}
+
+func (l *logger) GetFormat() string {
+	return l.format
 }
 
 func (l *logger) debugSrc() *logger {
@@ -121,7 +126,7 @@ func (l *logger) debugSrc() *logger {
 		slash := strings.LastIndex(file, "/")
 		file = file[slash+1:]
 	}
-	return &logger{l.Logger.With("source", fmt.Sprintf("%s:%d", file, line)), l.level}
+	return &logger{l.Logger.With("source", fmt.Sprintf("%s:%d", file, line)), l.level, l.format}
 }
 
 func (l *logger) log(level CustomLevel, args ...any) {
@@ -183,7 +188,7 @@ func (l *logger) Panicln(args ...any) {
 func (l *logger) Traceln(args ...any) { l.Trace(args...) }
 
 func (l *logger) With(key string, value any) Logger {
-	return &logger{l.Logger.With(key, value), l.level}
+	return &logger{l.Logger.With(key, value), l.level, l.format}
 }
 
 func (l *logger) Withs(fields Fields) Logger {
@@ -191,7 +196,7 @@ func (l *logger) Withs(fields Fields) Logger {
 	for k, v := range fields {
 		attrs = append(attrs, k, v)
 	}
-	return &logger{l.Logger.With(attrs...), l.level}
+	return &logger{l.Logger.With(attrs...), l.level, l.format}
 }
 
 func (l *logger) WithSrc() Logger {
@@ -223,6 +228,7 @@ var (
 	defaultLogger = newAppLogger(&Config{
 		BasePrefix:   "core",
 		DefaultLevel: "debug",
+		Format:       "text",
 	})
 )
 
@@ -234,15 +240,25 @@ func GlobalLogger() AppLogger {
 	return defaultLogger
 }
 
+func NewAppLogger(config *Config) AppLogger {
+	return newAppLogger(config)
+}
+
+func SetGlobalLogger(logger AppLogger) {
+	if appLogger, ok := logger.(*appLogger); ok {
+		defaultLogger = appLogger
+	}
+}
+
 type Config struct {
 	DefaultLevel string
 	BasePrefix   string
+	Format       string
 }
 
 type appLogger struct {
-	logger   *slog.Logger
-	cfg      Config
-	logLevel string
+	logger *slog.Logger
+	cfg    Config
 }
 
 func newAppLogger(config *Config) *appLogger {
@@ -254,12 +270,15 @@ func newAppLogger(config *Config) *appLogger {
 		config.DefaultLevel = "info"
 	}
 
-	l := createSlogLogger(mustParseLevel(config.DefaultLevel))
+	if config.Format == "" {
+		config.Format = "text"
+	}
+
+	l := createSlogLogger(mustParseLevel(config.DefaultLevel), config.Format)
 
 	return &appLogger{
-		logger:   l,
-		cfg:      *config,
-		logLevel: config.DefaultLevel,
+		logger: l,
+		cfg:    *config,
 	}
 }
 
@@ -272,7 +291,7 @@ func (al *appLogger) GetLogger(prefix string) Logger {
 		l = l.With("prefix", prefix)
 	}
 
-	return &logger{l, mustParseLevel(al.logLevel)}
+	return &logger{l, mustParseLevel(al.cfg.DefaultLevel), al.cfg.Format}
 }
 
 func (*appLogger) ID() string {
@@ -280,11 +299,11 @@ func (*appLogger) ID() string {
 }
 
 func (al *appLogger) InitFlags() {
-	flag.StringVar(&al.logLevel, "log-level", al.cfg.DefaultLevel, "Log level: trace | debug | info | warn | error | fatal | panic")
+	// No longer using flags - configuration is passed directly
 }
 
 func (al *appLogger) Activate(_ ServiceContext) error {
-	al.logger = createSlogLogger(mustParseLevel(al.logLevel))
+	al.logger = createSlogLogger(mustParseLevel(al.cfg.DefaultLevel), al.cfg.Format)
 
 	return nil
 }
@@ -307,14 +326,55 @@ const (
 	ansiBackgroundRed  = "\033[41m"
 )
 
-func createSlogLogger(level CustomLevel) *slog.Logger {
+func createSlogLogger(level CustomLevel, format string) *slog.Logger {
 	w := os.Stderr
+
+	if format == "json" {
+		return slog.New(
+			slog.NewJSONHandler(w, &slog.HandlerOptions{
+				AddSource: false,
+				Level:     level.Level(),
+				ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+					if a.Key == slog.LevelKey {
+						lvl := a.Value.Any().(slog.Level)
+						switch {
+						case lvl == LevelTrace.Level():
+							a.Value = slog.StringValue("TRACE")
+						case lvl == LevelDebug.Level():
+							a.Value = slog.StringValue("DEBUG")
+						case lvl == LevelInfo.Level():
+							a.Value = slog.StringValue("INFO")
+						case lvl == LevelWarn.Level():
+							a.Value = slog.StringValue("WARN")
+						case lvl == LevelError.Level():
+							a.Value = slog.StringValue("ERROR")
+						case lvl == LevelFatal.Level():
+							a.Value = slog.StringValue("FATAL")
+						case lvl == LevelPanic.Level():
+							a.Value = slog.StringValue("PANIC")
+						default:
+							a.Value = slog.StringValue("UNKNOWN")
+						}
+					}
+					if a.Key == slog.TimeKey {
+						if t, ok := a.Value.Any().(time.Time); ok {
+							a.Value = slog.StringValue(t.Format(time.RFC3339Nano))
+						}
+					}
+
+					return a
+				},
+			}),
+		)
+	}
+
+	// Default to text format with colors
 	return slog.New(
 		tint.NewHandler(w, &tint.Options{
-			AddSource:  true,
+			AddSource:  false,
 			Level:      level.Level(),
 			NoColor:    !isatty.IsTerminal(w.Fd()),
-			TimeFormat: time.DateTime,
+			TimeFormat: time.RFC3339Nano,
 			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.LevelKey {
 					lvl := a.Value.Any().(slog.Level)

@@ -51,6 +51,15 @@ func main() {
 				return err
 			}
 
+			// Create and set custom logger based on config
+			loggerConfig := &sctx.Config{
+				DefaultLevel: cfg.Logger.Level,
+				BasePrefix:   "fiberapp",
+				Format:       cfg.Logger.Format,
+			}
+			customLogger := sctx.NewAppLogger(loggerConfig)
+			sctx.SetGlobalLogger(customLogger)
+
 			fxApp := fx.New(
 				fx.Provide(
 					func() *config.Config { return cfg },
@@ -114,7 +123,6 @@ func NewServiceContextAndLoad(cfg *config.Config) sctx.ServiceContext {
 
 	return sc
 }
-
 
 func NewFiberApp() *fiber.App {
 	app := fiber.New(fiber.Config{BodyLimit: 100 * 1024 * 1024})
@@ -185,6 +193,7 @@ func NewRouter(app *fiber.App, sc sctx.ServiceContext, cfg *config.Config, todoH
 
 func ping() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+
 		return ctx.Status(200).JSON(&fiber.Map{
 			"msg": "pong",
 		})
@@ -193,6 +202,9 @@ func ping() fiber.Handler {
 
 func health() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		logger := sctx.GlobalLogger().GetLogger("fiber")
+		logger.Withs(sctx.Fields{"my_demo": "123", "my_demo2": "456", "my_demo3": "789"}).Info("ping123 info")
+
 		return ctx.Status(200).JSON(&fiber.Map{
 			"status":    "healthy",
 			"timestamp": time.Now().Unix(),
