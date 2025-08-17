@@ -26,10 +26,6 @@ func (a *asynqClientEngine) ID() string {
 	return a.id
 }
 
-func (a *asynqClientEngine) InitFlags() {
-	// Configuration is passed via constructor, no flags needed
-}
-
 func (a *asynqClientEngine) Activate(sc sctx.ServiceContext) error {
 	a.logger = sc.Logger(a.id)
 	a.logger.Info("Connecting to Asynq Redis at ", a.redisURI, "...")

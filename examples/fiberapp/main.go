@@ -2,25 +2,26 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
 	"fiberapp/internal/components/asynqc"
 	"fiberapp/internal/components/asynqw"
-	"fiberapp/internal/components/fiberc"
-	"fiberapp/internal/components/pgxc"
-	"fiberapp/internal/components/redisc"
 	"fiberapp/internal/config"
 	"fiberapp/internal/db"
 	"fiberapp/internal/handler"
 	"fiberapp/internal/jobs"
 	"fiberapp/internal/service"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgxpool"
 	sctx "github.com/phathdt/service-context"
+	"github.com/phathdt/service-context/component/pgxc"
+	"github.com/phathdt/service-context/component/redisc"
 	"github.com/redis/go-redis/v9"
 	slogfiber "github.com/samber/slog-fiber"
 	"github.com/urfave/cli/v2"
@@ -43,7 +44,7 @@ func main() {
 		},
 		Action: func(cCtx *cli.Context) error {
 			configPath := cCtx.String("config")
-			
+
 			// Load configuration from YAML + env overrides
 			cfg, err := config.LoadConfig(configPath)
 			if err != nil {
@@ -54,7 +55,6 @@ func main() {
 				fx.Provide(
 					func() *config.Config { return cfg },
 					NewServiceContextAndLoad,
-					NewFiberComponent,
 					NewFiberApp,
 					NewPostgresConnection,
 					NewRedisConnection,
@@ -69,15 +69,15 @@ func main() {
 					NewRouter,
 					RegisterJobHandlers,
 					func(lc fx.Lifecycle, sc sctx.ServiceContext) {
-					lc.Append(fx.Hook{
-						OnStop: func(ctx context.Context) error {
-							logger := sctx.GlobalLogger().GetLogger("service")
-							_ = sc.Stop()
-							logger.Info("Server exited")
-							return nil
-						},
-					})
-				}),
+						lc.Append(fx.Hook{
+							OnStop: func(ctx context.Context) error {
+								logger := sctx.GlobalLogger().GetLogger("service")
+								_ = sc.Stop()
+								logger.Info("Server exited")
+								return nil
+							},
+						})
+					}),
 			)
 
 			fxApp.Run()
@@ -91,13 +91,13 @@ func main() {
 }
 
 func NewServiceContextAndLoad(cfg *config.Config) sctx.ServiceContext {
-	
+
 	// Create components with configuration passed directly in constructors
 	pgxComp := pgxc.New("postgres", "postgres", cfg.Database.GetDSN())
 	redisComp := redisc.New("redis", cfg.Redis.GetURI())
 	asynqClientComp := asynqc.New("asynq-client", cfg.Redis.GetURI())
 	asynqWorkerComp := asynqw.New("asynq-worker", cfg.Redis.GetURI())
-	
+
 	// Create service context WITHOUT fiber component first
 	sc := sctx.NewServiceContext(
 		sctx.WithName("fiberapp"),
@@ -106,27 +106,24 @@ func NewServiceContextAndLoad(cfg *config.Config) sctx.ServiceContext {
 		sctx.WithComponent(asynqClientComp),
 		sctx.WithComponent(asynqWorkerComp),
 	)
-	
+
 	// Load all components (postgres, redis, asynq client & worker)
 	if err := sc.Load(); err != nil {
 		panic(err)
 	}
-	
+
 	return sc
 }
 
-func NewFiberComponent(cfg *config.Config) sctx.Component {
-	return fiberc.New("fiber", cfg.Server.Port)
-}
 
 func NewFiberApp() *fiber.App {
 	app := fiber.New(fiber.Config{BodyLimit: 100 * 1024 * 1024})
 	logger := sctx.GlobalLogger().GetLogger("fiber").GetSLogger()
-	
+
 	app.Use(slogfiber.New(logger))
 	app.Use(compress.New())
 	app.Use(cors.New())
-	
+
 	return app
 }
 
@@ -164,12 +161,12 @@ func RegisterJobHandlers(worker asynqw.AsynqWorkerComponent, handlers *jobs.JobH
 	worker.RegisterHandler(jobs.TypeTodoDeleted, handlers.HandleTodoDeleted)
 }
 
-func NewRouter(app *fiber.App, sc sctx.ServiceContext, fiberComp sctx.Component, todoHandler *handler.TodoHandler) {
+func NewRouter(app *fiber.App, sc sctx.ServiceContext, cfg *config.Config, todoHandler *handler.TodoHandler) {
 	app.Get("/", ping())
 	app.Get("/health", health())
-	
+
 	api := app.Group("/api/v1")
-	
+
 	todos := api.Group("/todos")
 	todos.Get("/", todoHandler.ListTodos)
 	todos.Post("/", todoHandler.CreateTodo)
@@ -177,15 +174,13 @@ func NewRouter(app *fiber.App, sc sctx.ServiceContext, fiberComp sctx.Component,
 	todos.Put("/:id", todoHandler.UpdateTodo)
 	todos.Delete("/:id", todoHandler.DeleteTodo)
 	todos.Patch("/:id/toggle", todoHandler.ToggleComplete)
-	
-	// Set the app on the fiber component and then activate it
-	fiberComponent := fiberComp.(fiberc.FiberComponent)
-	fiberComponent.SetApp(app)
-	
-	// Now activate the fiber component to start the server
-	if err := fiberComp.Activate(sc); err != nil {
-		panic(err)
-	}
+
+	// Start the Fiber server directly
+	go func() {
+		if err := app.Listen(fmt.Sprintf(":%d", cfg.Server.Port)); err != nil {
+			panic(err)
+		}
+	}()
 }
 
 func ping() fiber.Handler {
@@ -199,7 +194,7 @@ func ping() fiber.Handler {
 func health() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		return ctx.Status(200).JSON(&fiber.Map{
-			"status": "healthy",
+			"status":    "healthy",
 			"timestamp": time.Now().Unix(),
 		})
 	}

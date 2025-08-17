@@ -1,12 +1,7 @@
 package sctx
 
 import (
-	"flag"
 	"fmt"
-	"log"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
 const (
@@ -17,7 +12,6 @@ const (
 
 type Component interface {
 	ID() string
-	InitFlags()
 	Activate(ServiceContext) error
 	Stop() error
 }
@@ -27,10 +21,7 @@ type ServiceContext interface {
 	MustGet(id string) any
 	Get(id string) (any, bool)
 	Logger(prefix string) Logger
-	EnvName() string
-	GetName() string
 	Stop() error
-	OutEnv()
 }
 
 type serviceCtx struct {
@@ -38,13 +29,13 @@ type serviceCtx struct {
 	env        string
 	components []Component
 	store      map[string]Component
-	cmdLine    *AppFlagSet
 	logger     Logger
 }
 
 func NewServiceContext(opts ...Option) ServiceContext {
 	sv := &serviceCtx{
 		store: make(map[string]Component),
+		env:   DevEnv, // Default environment
 	}
 
 	sv.components = []Component{defaultLogger}
@@ -53,22 +44,9 @@ func NewServiceContext(opts ...Option) ServiceContext {
 		opt(sv)
 	}
 
-	sv.initFlags()
-
-	sv.cmdLine = newFlagSet(sv.name, flag.CommandLine)
-	sv.parseFlags()
-
 	sv.logger = defaultLogger.GetLogger(sv.name)
 
 	return sv
-}
-
-func (s *serviceCtx) initFlags() {
-	flag.StringVar(&s.env, "app-env", DevEnv, "Env for service. Ex: dev | stg | prd")
-
-	for _, c := range s.components {
-		c.InitFlags()
-	}
 }
 
 func (s *serviceCtx) Get(id string) (any, bool) {
@@ -120,10 +98,6 @@ func (s *serviceCtx) Stop() error {
 	return nil
 }
 
-func (s *serviceCtx) GetName() string { return s.name }
-func (s *serviceCtx) EnvName() string { return s.env }
-func (s *serviceCtx) OutEnv()         { s.cmdLine.GetSampleEnvs() }
-
 type Option func(*serviceCtx)
 
 func WithName(name string) Option {
@@ -137,22 +111,4 @@ func WithComponent(c Component) Option {
 			s.store[c.ID()] = c
 		}
 	}
-}
-
-func (s *serviceCtx) parseFlags() {
-	envFile := os.Getenv("ENV_FILE")
-	if envFile == "" {
-		envFile = ".env"
-	}
-
-	_, err := os.Stat(envFile)
-	if err == nil {
-		if err = godotenv.Load(envFile); err != nil {
-			log.Fatalf("Loading env(%s): %s", envFile, err.Error())
-		}
-	} else if envFile != ".env" {
-		log.Fatalf("Loading env(%s): %s", envFile, err.Error())
-	}
-
-	s.cmdLine.Parse([]string{})
 }

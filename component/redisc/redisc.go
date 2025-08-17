@@ -2,7 +2,6 @@ package redisc
 
 import (
 	"context"
-	"flag"
 
 	sctx "github.com/phathdt/service-context"
 
@@ -27,18 +26,17 @@ type redisEngine struct {
 	maxIde    int
 }
 
-func New(id string) *redisEngine {
-	return &redisEngine{id: id}
+func New(id string, redisURI string) *redisEngine {
+	return &redisEngine{
+		id:        id,
+		redisUri:  redisURI,
+		maxActive: defaultRedisMaxActive,
+		maxIde:    defaultRedisMaxIdle,
+	}
 }
 
 func (r *redisEngine) ID() string {
 	return r.id
-}
-
-func (r *redisEngine) InitFlags() {
-	flag.StringVar(&r.redisUri, "redis-uri", "redis://localhost:6379", "(For go-redis) Redis connection-string. Ex: redis://localhost/0")
-	flag.IntVar(&r.maxActive, "redis-pool-max-active", defaultRedisMaxActive, "(For go-redis) Override redis pool MaxActive")
-	flag.IntVar(&r.maxIde, "redis-pool-max-idle", defaultRedisMaxIdle, "(For go-redis) Override redis pool MaxIdle")
 }
 
 func (r *redisEngine) Activate(sc sctx.ServiceContext) error {

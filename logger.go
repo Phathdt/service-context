@@ -163,7 +163,7 @@ func (l *logger) Fatalf(format string, args ...any) {
 }
 func (l *logger) Panicf(format string, args ...any) {
 	s := fmt.Sprintf(format, args...)
-	l.logf(LevelPanic, s)
+	l.logf(LevelPanic, "%s", s)
 	panic(s)
 }
 func (l *logger) Tracef(format string, args ...any) { l.logf(LevelTrace, format, args...) }

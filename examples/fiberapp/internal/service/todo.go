@@ -8,6 +8,7 @@ import (
 
 	"fiberapp/internal/db"
 	"fiberapp/internal/jobs"
+
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -21,15 +22,6 @@ type TodoService struct {
 }
 
 func NewTodoService(queries *db.Queries, redis *redis.Client, asynqClient *asynq.Client) *TodoService {
-	if queries == nil {
-		panic("queries cannot be nil")
-	}
-	if redis == nil {
-		panic("redis client cannot be nil")
-	}
-	if asynqClient == nil {
-		panic("asynq client cannot be nil")
-	}
 	return &TodoService{
 		queries:     queries,
 		redis:       redis,
@@ -59,7 +51,7 @@ type TodoResponse struct {
 
 func (s *TodoService) GetTodo(ctx context.Context, id string) (*TodoResponse, error) {
 	cacheKey := fmt.Sprintf("todo:%s", id)
-	
+
 	cached, err := s.redis.Get(ctx, cacheKey).Result()
 	if err == nil {
 		var todo TodoResponse
@@ -79,7 +71,7 @@ func (s *TodoService) GetTodo(ctx context.Context, id string) (*TodoResponse, er
 	}
 
 	response := s.mapToResponse(todo)
-	
+
 	if data, err := json.Marshal(response); err == nil {
 		s.redis.Set(ctx, cacheKey, data, 5*time.Minute)
 	}
@@ -89,7 +81,7 @@ func (s *TodoService) GetTodo(ctx context.Context, id string) (*TodoResponse, er
 
 func (s *TodoService) ListTodos(ctx context.Context) ([]*TodoResponse, error) {
 	cacheKey := "todos:all"
-	
+
 	cached, err := s.redis.Get(ctx, cacheKey).Result()
 	if err == nil {
 		var todos []*TodoResponse
@@ -131,9 +123,9 @@ func (s *TodoService) CreateTodo(ctx context.Context, req CreateTodoRequest) (*T
 	}
 
 	s.invalidateCache(ctx)
-	
+
 	response := s.mapToResponse(todo)
-	
+
 	cacheKey := fmt.Sprintf("todo:%s", response.ID)
 	if data, err := json.Marshal(response); err == nil {
 		s.redis.Set(ctx, cacheKey, data, 5*time.Minute)
@@ -177,9 +169,9 @@ func (s *TodoService) UpdateTodo(ctx context.Context, id string, req UpdateTodoR
 	}
 
 	s.invalidateCache(ctx)
-	
+
 	response := s.mapToResponse(todo)
-	
+
 	cacheKey := fmt.Sprintf("todo:%s", id)
 	s.redis.Del(ctx, cacheKey)
 	if data, err := json.Marshal(response); err == nil {
@@ -241,9 +233,9 @@ func (s *TodoService) ToggleComplete(ctx context.Context, id string) (*TodoRespo
 	}
 
 	s.invalidateCache(ctx)
-	
+
 	response := s.mapToResponse(todo)
-	
+
 	cacheKey := fmt.Sprintf("todo:%s", id)
 	s.redis.Del(ctx, cacheKey)
 	if data, err := json.Marshal(response); err == nil {
