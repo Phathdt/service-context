@@ -1,4 +1,4 @@
-.PHONY: help build test clean lint fmt vet tidy deps run examples
+.PHONY: help build test clean lint fmt vet tidy deps run examples tag push
 
 # Default target
 help: ## Show this help message
@@ -71,3 +71,18 @@ check: fmt vet test ## Run format, vet, and test
 
 # CI pipeline
 ci: tidy fmt vet lint test ## Run all CI checks
+
+# Git operations
+tag: ## Create and push a git tag (usage: make tag VERSION=v1.3)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION is required. Usage: make tag VERSION=v1.3"; \
+		exit 1; \
+	fi
+	@echo "Creating tag $(VERSION)..."
+	git tag $(VERSION)
+	git push origin $(VERSION)
+	@echo "Tag $(VERSION) created and pushed successfully"
+
+push: ## Push current branch to origin
+	@echo "Pushing to origin..."
+	git push origin $$(git branch --show-current)

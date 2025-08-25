@@ -27,7 +27,7 @@ func cleanSQL(sql string) string {
 	// Remove sqlc comments (-- name: ...)
 	lines := strings.Split(sql, "\n")
 	var cleanLines []string
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		// Skip empty lines and sqlc comments
@@ -36,21 +36,21 @@ func cleanSQL(sql string) string {
 		}
 		cleanLines = append(cleanLines, line)
 	}
-	
+
 	// Join with spaces and clean up extra whitespace
 	result := strings.Join(cleanLines, " ")
-	
+
 	// Remove multiple spaces
 	re := regexp.MustCompile(`\s+`)
 	result = re.ReplaceAllString(result, " ")
-	
+
 	return strings.TrimSpace(result)
 }
 
 // getSQLType determines the SQL operation type for coloring
 func getSQLType(sql string) string {
 	sqlLower := strings.ToLower(strings.TrimSpace(sql))
-	
+
 	if strings.HasPrefix(sqlLower, "select") {
 		return "select"
 	} else if strings.HasPrefix(sqlLower, "insert") {
@@ -62,7 +62,7 @@ func getSQLType(sql string) string {
 	} else if strings.HasPrefix(sqlLower, "create") || strings.HasPrefix(sqlLower, "alter") || strings.HasPrefix(sqlLower, "drop") {
 		return "ddl"
 	}
-	
+
 	return "other"
 }
 
@@ -71,7 +71,7 @@ func colorizeSQL(sql string, sqlType string, isTextFormat bool) string {
 	if !isTextFormat {
 		return sql
 	}
-	
+
 	switch sqlType {
 	case "select":
 		return ansiBrightBlue + sql + ansiReset
@@ -100,7 +100,7 @@ func (l *PgxLogAdapter) Log(ctx context.Context, level tracelog.LogLevel, msg st
 	// The actual SQL is in data["sql"], not in msg
 	var actualSQL string
 	var sqlType string = "other"
-	
+
 	if len(data) > 0 {
 		if sqlStr, ok := data["sql"].(string); ok {
 			actualSQL = cleanSQL(sqlStr)
@@ -130,7 +130,7 @@ func (l *PgxLogAdapter) Log(ctx context.Context, level tracelog.LogLevel, msg st
 				cleanedData[k] = v
 			}
 		}
-		
+
 		// Add SQL type as metadata
 		cleanedData["sql_type"] = sqlType
 		logger = l.logger.Withs(sctx.Fields(cleanedData))

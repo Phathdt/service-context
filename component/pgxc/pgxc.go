@@ -28,7 +28,6 @@ func (p *pgxComp) ID() string {
 	return p.id
 }
 
-
 func (p *pgxComp) Activate(_ sctx.ServiceContext) error {
 	p.logger = sctx.GlobalLogger().GetLogger(p.id)
 
