@@ -13,6 +13,8 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
+
 type Fields map[string]any
 
 type Logger interface {
@@ -358,7 +360,7 @@ func createSlogLogger(level CustomLevel, format string) *slog.Logger {
 					}
 					if a.Key == slog.TimeKey {
 						if t, ok := a.Value.Any().(time.Time); ok {
-							a.Value = slog.StringValue(t.Format(time.RFC3339Nano))
+							a.Value = slog.StringValue(t.Format(RFC3339Milli))
 						}
 					}
 
@@ -374,7 +376,7 @@ func createSlogLogger(level CustomLevel, format string) *slog.Logger {
 			AddSource:  false,
 			Level:      level.Level(),
 			NoColor:    !isatty.IsTerminal(w.Fd()),
-			TimeFormat: time.RFC3339Nano,
+			TimeFormat: RFC3339Milli,
 			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.LevelKey {
 					lvl := a.Value.Any().(slog.Level)
